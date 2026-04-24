@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Calculator with History</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: #ffffff; padding: 30px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 550px; }
+        h2 { text-align: center; color: #1a73e8; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full-width { grid-column: span 2; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: #3c4043; }
+        input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .calc-total { background-color: #34a853; color: white; }
+        .calc-basic { background-color: #1a73e8; color: white; }
+        .save-btn { background-color: #5f6368; color: white; margin-top: 10px; width: 100%; }
+        .result-container { margin-top: 25px; display: none; }
+        .result-box { padding: 15px; border-radius: 8px; background-color: #f8f9fa; border-left: 5px solid #1a73e8; margin-bottom: 10px; }
+        footer { margin-top: 30px; text-align: center; font-size: 12px; color: #70757a; border-top: 1px solid #f0f2f5; padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>වැටුප් ගණක යන්ත්‍රය</h2>
+    
+    <div class="grid-container">
+        <div class="form-group full-width">
+            <label>වත්මන් මුදල (මූලික පඩිය හෝ ශුද්ධ වැටුප):</label>
+            <input type="number" id="mainAmount" placeholder="0.00">
+        </div>
+        <div class="form-group full-width">
+            <label>පෙර මූලික පඩිය (වැඩිවීම බැලීමට):</label>
+            <input type="number" id="prevBasic" placeholder="0.00">
+        </div>
+        <div class="form-group"> <label>සාමාන්‍ය OT පැය:</label> <input type="number" id="ot1" value="0"> </div>
+        <div class="form-group"> <label>විශේෂ OT පැය:</label> <input type="number" id="ot2" value="0"> </div>
+        <div class="form-group"> <label>හිඟ නිවාඩු:</label> <input type="number" id="leave" value="0"> </div>
+        <div class="form-group"> <label>දීමනා:</label> <input type="number" id="allowance" value="0"> </div>
+    </div>
+
+    <div class="button-group">
+        <button class="calc-total" onclick="calculate('NET')">Net Salary සොයන්න</button>
+        <button class="calc-basic" onclick="calculate('BASIC')">Basic Salary සොයන්න</button>
+    </div>
+
+    <div class="result-container" id="resultContainer">
+        <div class="result-box">
+            <span id="resTitle" style="font-size: 13px; color: #5f6368;">ප්‍රතිඵලය:</span><br>
+            <span class="result-val" id="resValue" style="font-size: 20px; font-weight: bold;">0.00</span>
+        </div>
+        <button class="save-btn" onclick="saveToFile()">Calculation එක Text File එකට දාන්න</button>
+    </div>
+
+    <footer>
+        © All rights reserved.<br>
+        Developed by Udan A. Jayawardene<br>
+        UDAN JAY™ DIGITAL SOLUTION
+    </footer>
+</div>
+
+<script>
+    let lastCalculation = "";
+
+    function calculate(type) {
+        const val = parseFloat(document.getElementById('mainAmount').value) || 0;
+        const prev = parseFloat(document.getElementById('prevBasic').value) || 0;
+        const h1 = parseFloat(document.getElementById('ot1').value) || 0;
+        const h2 = parseFloat(document.getElementById('ot2').value) || 0;
+        const l = parseFloat(document.getElementById('leave').value) || 0;
+        const al = parseFloat(document.getElementById('allowance').value) || 0;
+
+        let result, basicForInc;
+        let timestamp = new Date().toLocaleString();
+
+        if (type === 'NET') {
+            let ot1Pay = (val / 240) * 1.5 * h1;
+            let ot2Pay = (val / 240) * 2 * h2;
+            let lPay = (val / 30) * l;
+            let epf = (val + ot2Pay + lPay) * 0.08;
+            result = val + ot1Pay + ot2Pay + lPay - epf + al;
+            basicForInc = val;
+            document.getElementById('resTitle').innerText = "ගණනය කළ ශුද්ධ වැටුප:";
+        } else {
+            let den = 0.92 + (0.00625 * h1) + (0.007666 * h2) + (0.030666 * l);
+            result = (val - al) / den;
+            basicForInc = result;
+            document.getElementById('resTitle').innerText = "ගණනය කළ මූලික පඩිය:";
+        }
+
+        let incText = (prev > 0) ? ` | වැඩිවීම: රු. ${(basicForInc - prev).toFixed(2)}` : "";
+        document.getElementById('resValue').innerText = "රු. " + result.toLocaleString(undefined, {minimumFractionDigits:2});
+        document.getElementById('resultContainer').style.display = 'block';
+
+        // Text file එකට යන string එක සකස් කිරීම
+        lastCalculation = `දිනය: ${timestamp}\nවර්ගය: ${type}\nමුදල: ${val}\nOT 1.5: ${h1}\nOT 2.0: ${h2}\nනිවාඩු: ${l}\nදීමනා: ${al}\nප්‍රතිඵලය: ${result.toFixed(2)}${incText}\n--------------------------\n`;
+    }
+
+    function saveToFile() {
+        if (!lastCalculation) return;
+        const blob = new Blob([lastCalculation], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Salary_Report.txt';
+        a.click();
+    }
+</script>
+
+</body>
+</html>
