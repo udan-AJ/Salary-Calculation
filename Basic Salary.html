@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Calculator Pro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 550px;
+        }
+        h2 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 10px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #3c4043;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 5px rgba(26,115,232,0.2);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .calc-total { background-color: #34a853; color: white; }
+        .calc-basic { background-color: #1a73e8; color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        
+        .result-container {
+            margin-top: 25px;
+            display: none;
+        }
+        .result-box {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #1a73e8;
+            margin-bottom: 10px;
+        }
+        .increment-box {
+            border-left-color: #f9ab00;
+            background-color: #fff9e6;
+        }
+        .result-label { font-size: 13px; color: #5f6368; display: block; }
+        .result-val { font-size: 20px; font-weight: bold; color: #202124; }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #70757a;
+            border-top: 1px solid #f0f2f5;
+            padding-top: 15px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>වැටුප් ගණක යන්ත්‍රය</h2>
+    
+    <div class="grid-container">
+        <div class="form-group full-width">
+            <label>වත්මන් මුදල (මූලික පඩිය හෝ ශුද්ධ වැටුප):</label>
+            <input type="number" id="mainAmount" placeholder="0.00">
+        </div>
+
+        <div class="form-group full-width">
+            <label>පෙර මූලික පඩිය (වැඩිවීම බැලීමට පමණක්):</label>
+            <input type="number" id="prevBasic" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+            <label>සාමාන්‍ය OT පැය (1.5):</label>
+            <input type="number" id="ot1" value="0">
+        </div>
+
+        <div class="form-group">
+            <label>විශේෂ OT පැය (2.0):</label>
+            <input type="number" id="ot2" value="0">
+        </div>
+
+        <div class="form-group">
+            <label>විශේෂ හිඟ නිවාඩු:</label>
+            <input type="number" id="leave" value="0">
+        </div>
+
+        <div class="form-group">
+            <label>ස්ථාවර දීමනා:</label>
+            <input type="number" id="allowance" value="0">
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button class="calc-total" onclick="calculateNet()">ශුද්ධ වැටුප සොයන්න</button>
+        <button class="calc-basic" onclick="calculateBasic()">මූලික පඩිය සොයන්න</button>
+    </div>
+
+    <div class="result-container" id="resultContainer">
+        <div class="result-box">
+            <span class="result-label" id="resTitle">ගණනය කළ අගය:</span>
+            <span class="result-val" id="resValue">රු. 0.00</span>
+        </div>
+        
+        <div class="result-box increment-box" id="incrementBox" style="display:none;">
+            <span class="result-label">මූලික පඩියේ වැඩිවීම:</span>
+            <span class="result-val" id="incrementValue" style="color: #e67e22;">රු. 0.00</span>
+        </div>
+    </div>
+
+    <footer>
+        © All rights reserved.<br>
+        Developed by Udan A. Jayawardene<br>
+        UDAN JAY™ DIGITAL SOLUTION
+    </footer>
+</div>
+
+<script>
+    function calculateNet() {
+        const basic = parseFloat(document.getElementById('mainAmount').value) || 0;
+        const prevBasic = parseFloat(document.getElementById('prevBasic').value) || 0;
+        const ot1Hours = parseFloat(document.getElementById('ot1').value) || 0;
+        const ot2Hours = parseFloat(document.getElementById('ot2').value) || 0;
+        const leaveDays = parseFloat(document.getElementById('leave').value) || 0;
+        const allowance = parseFloat(document.getElementById('allowance').value) || 0;
+
+        const ot1Pay = (basic / 240) * 1.5 * ot1Hours;
+        const ot2Pay = (basic / 240) * 2 * ot2Hours;
+        const leavePay = (basic / 30) * leaveDays;
+        const epfDeduction = (basic + ot2Pay + leavePay) * 0.08;
+
+        const netSalary = basic + ot1Pay + ot2Pay + leavePay - epfDeduction + allowance;
+
+        showResult("ගණනය කළ ශුද්ධ වැටුප (Net Salary):", netSalary, basic, prevBasic);
+    }
+
+    function calculateBasic() {
+        const net = parseFloat(document.getElementById('mainAmount').value) || 0;
+        const prevBasic = parseFloat(document.getElementById('prevBasic').value) || 0;
+        const ot1Hours = parseFloat(document.getElementById('ot1').value) || 0;
+        const ot2Hours = parseFloat(document.getElementById('ot2').value) || 0;
+        const leaveDays = parseFloat(document.getElementById('leave').value) || 0;
+        const allowance = parseFloat(document.getElementById('allowance').value) || 0;
+
+        const denominator = 0.92 + (0.00625 * ot1Hours) + (0.007666 * ot2Hours) + (0.030666 * leaveDays);
+        const basicSalary = (net - allowance) / denominator;
+
+        showResult("ගණනය කළ මූලික පඩිය (Basic Salary):", basicSalary, basicSalary, prevBasic);
+    }
+
+    function showResult(title, mainVal, currentBasic, oldBasic) {
+        document.getElementById('resultContainer').style.display = 'block';
+        document.getElementById('resTitle').innerText = title;
+        document.getElementById('resValue').innerText = formatCurrency(mainVal);
+
+        const incrementBox = document.getElementById('incrementBox');
+        if (oldBasic > 0 && currentBasic > oldBasic) {
+            const diff = currentBasic - oldBasic;
+            incrementBox.style.display = 'block';
+            document.getElementById('incrementValue').innerText = formatCurrency(diff);
+        } else {
+            incrementBox.style.display = 'none';
+        }
+    }
+
+    function formatCurrency(val) {
+        return "රු. " + val.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+</script>
+
+</body>
+</html>
