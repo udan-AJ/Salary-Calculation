@@ -5,20 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salary Calculator</title>
     <style>
+        /* CSS Fix for Mobile Overflow */
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f0f2f5;
             color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .container {
+            width: 100%;
             max-width: 650px;
             margin: 0 auto;
             background: #ffffff;
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            flex-grow: 1; /* Pushes footer to bottom */
         }
         h2 {
             text-align: center;
@@ -41,6 +51,7 @@
             color: #007bff;
             font-weight: bold;
             transition: 0.3s;
+            font-size: 14px;
         }
         .tab.active {
             background: #007bff;
@@ -65,6 +76,7 @@
             color: #555;
         }
         input {
+            width: 100%;
             padding: 10px;
             font-size: 15px;
             border: 1px solid #ccc;
@@ -109,6 +121,11 @@
         .result-row.addition {
             color: #28a745;
         }
+        .result-row.highlight {
+            font-weight: bold;
+            color: #17a2b8;
+            margin-bottom: 15px;
+        }
         hr {
             border: 0;
             border-top: 1px solid #ccc;
@@ -118,6 +135,38 @@
             font-size: 18px;
             font-weight: bold;
             color: #000;
+        }
+
+        /* Footer Styles */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-bottom: 10px;
+            color: #6c757d;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 4px 0;
+        }
+        .footer .brand {
+            font-weight: bold;
+            color: #007bff;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        /* Mobile Responsive adjustments */
+        @media (max-width: 600px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+            .container {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -133,12 +182,17 @@
 
     <div class="input-grid">
         <div class="form-group full-width" id="group-basic">
-            <label>Basic Salary (Rs.)</label>
+            <label>New Basic Salary (Rs.)</label>
             <input type="number" id="basic_salary" value="0" min="0">
         </div>
         <div class="form-group full-width" id="group-gross" style="display:none;">
             <label>Target Gross Salary (Rs.)</label>
             <input type="number" id="gross_salary" value="0" min="0">
+        </div>
+        
+        <div class="form-group full-width">
+            <label>Previous Basic Salary (Rs.)</label>
+            <input type="number" id="prev_basic_salary" value="0" min="0">
         </div>
 
         <div class="form-group">
@@ -168,7 +222,12 @@
     <div class="result-box" id="result_div">
         <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Calculation Breakdown</h3>
         
-        <div class="result-row"><span>Basic Salary:</span> <strong id="res_basic">0.00</strong></div>
+        <div class="result-row"><span>New Basic Salary:</span> <strong id="res_basic">0.00</strong></div>
+        <div class="result-row" style="color: #6c757d; font-size: 14px;"><span>- Previous Basic Salary:</span> <span id="res_prev_basic">0.00</span></div>
+        <div class="result-row highlight"><span>= Increment Amount:</span> <span id="res_increment">0.00</span></div>
+        
+        <hr style="margin-top: 5px;">
+
         <div class="result-row addition"><span>+ Normal OT Amount:</span> <span id="res_normal_ot">0.00</span></div>
         <div class="result-row addition"><span>+ Special OT Amount:</span> <span id="res_special_ot">0.00</span></div>
         <div class="result-row addition"><span>+ Special Lieu Leaves Amount:</span> <span id="res_lieu">0.00</span></div>
@@ -182,18 +241,22 @@
     </div>
 </div>
 
+<div class="footer">
+    <p>&copy; All rights reserved.</p>
+    <p>Developed by <strong>Udan A. Jayawardene</strong>.</p>
+    <p class="brand">UDAN JAY&trade; DIGITAL SOLUTIONS.</p>
+</div>
+
 <script>
-    let currentMode = 'forward'; // 'forward' or 'backward'
+    let currentMode = 'forward';
 
     function setMode(mode) {
         currentMode = mode;
         
-        // Update tabs UI
         document.getElementById('tab-forward').classList.remove('active');
         document.getElementById('tab-backward').classList.remove('active');
         document.getElementById('tab-' + mode).classList.add('active');
 
-        // Show/Hide relevant input fields
         if (mode === 'forward') {
             document.getElementById('group-basic').style.display = 'flex';
             document.getElementById('group-gross').style.display = 'none';
@@ -202,7 +265,6 @@
             document.getElementById('group-gross').style.display = 'flex';
         }
         
-        // Hide result box when switching modes
         document.getElementById('result_div').style.display = 'none';
     }
 
@@ -216,17 +278,16 @@
     }
 
     function calculateSalary() {
-        // Get Inputs
         const normalOtHours = getValue('normal_ot_hours');
         const specialOtHours = getValue('special_ot_hours');
         const lieuLeaves = getValue('lieu_leaves');
         const allowance = getValue('allowance');
         const deductions = getValue('deductions');
+        const prevBasicSalary = getValue('prev_basic_salary');
 
         let basicSalary = 0;
         let grossSalary = 0;
 
-        // Formula Multipliers (Constants based on Basic Salary)
         const k_normal_ot = (1.5 * normalOtHours) / 240;
         const k_special_ot = (2 * specialOtHours) / 240;
         const k_lieu = lieuLeaves / 30;
@@ -234,34 +295,26 @@
         if (currentMode === 'forward') {
             basicSalary = getValue('basic_salary');
         } else {
-            // Backward Calculation Logic (Algebraic derivation)
             grossSalary = getValue('gross_salary');
-            
-            // Gross = B + (B*k_normal) + (B*k_special) + (B*k_lieu) + Allowance - Deductions - EPF
-            // EPF = 0.08 * (B + B*k_special + B*k_lieu)
-            // Therefore: Gross - Allowance + Deductions = B * [1 + k_normal + k_special + k_lieu - 0.08 * (1 + k_special + k_lieu)]
-            
             const multiplier = 1 + k_normal_ot + k_special_ot + k_lieu - 0.08 * (1 + k_special_ot + k_lieu);
-            
             basicSalary = (grossSalary - allowance + deductions) / multiplier;
         }
 
-        // Calculate actual amounts using Basic Salary
+        const incrementAmount = basicSalary - prevBasicSalary;
         const normalOtAmount = basicSalary * k_normal_ot;
         const specialOtAmount = basicSalary * k_special_ot;
         const lieuAmount = basicSalary * k_lieu;
-        
-        // EPF Calculation
         const epfBaseAmount = basicSalary + specialOtAmount + lieuAmount;
         const epfDeduction = epfBaseAmount * 0.08;
 
-        // Calculate Gross Salary for 'forward' mode
         if (currentMode === 'forward') {
             grossSalary = basicSalary + normalOtAmount + specialOtAmount + lieuAmount + allowance - deductions - epfDeduction;
         }
 
-        // Update DOM Elements
         document.getElementById('res_basic').innerText = formatCurrency(basicSalary);
+        document.getElementById('res_prev_basic').innerText = formatCurrency(prevBasicSalary);
+        document.getElementById('res_increment').innerText = formatCurrency(incrementAmount);
+        
         document.getElementById('res_normal_ot').innerText = formatCurrency(normalOtAmount);
         document.getElementById('res_special_ot').innerText = formatCurrency(specialOtAmount);
         document.getElementById('res_lieu').innerText = formatCurrency(lieuAmount);
@@ -270,7 +323,6 @@
         document.getElementById('res_epf').innerText = formatCurrency(epfDeduction);
         document.getElementById('res_gross').innerText = formatCurrency(grossSalary);
 
-        // Show Results
         document.getElementById('result_div').style.display = 'block';
     }
 </script>
