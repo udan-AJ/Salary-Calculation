@@ -1,111 +1,277 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salary Calculator with History</title>
+    <title>Salary Calculator</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background: #ffffff; padding: 30px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 550px; }
-        h2 { text-align: center; color: #1a73e8; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .full-width { grid-column: span 2; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: #3c4043; }
-        input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; }
-        .button-group { display: flex; gap: 10px; margin-top: 20px; }
-        button { flex: 1; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .calc-total { background-color: #34a853; color: white; }
-        .calc-basic { background-color: #1a73e8; color: white; }
-        .save-btn { background-color: #5f6368; color: white; margin-top: 10px; width: 100%; }
-        .result-container { margin-top: 25px; display: none; }
-        .result-box { padding: 15px; border-radius: 8px; background-color: #f8f9fa; border-left: 5px solid #1a73e8; margin-bottom: 10px; }
-        footer { margin-top: 30px; text-align: center; font-size: 12px; color: #70757a; border-top: 1px solid #f0f2f5; padding-top: 15px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #007bff;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            color: #007bff;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+        label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+        }
+        input {
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #007bff;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: none;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .result-row.deduction {
+            color: #dc3545;
+        }
+        .result-row.addition {
+            color: #28a745;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #ccc;
+            margin: 15px 0;
+        }
+        .final-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>වැටුප් ගණක යන්ත්‍රය</h2>
+    <h2>Salary Calculator</h2>
     
-    <div class="grid-container">
-        <div class="form-group full-width">
-            <label>වත්මන් මුදල (මූලික පඩිය හෝ ශුද්ධ වැටුප):</label>
-            <input type="number" id="mainAmount" placeholder="0.00">
+    <div class="tabs">
+        <div class="tab active" id="tab-forward" onclick="setMode('forward')">Find Gross Salary</div>
+        <div class="tab" id="tab-backward" onclick="setMode('backward')">Find Basic Salary</div>
+    </div>
+
+    <div class="input-grid">
+        <div class="form-group full-width" id="group-basic">
+            <label>Basic Salary (Rs.)</label>
+            <input type="number" id="basic_salary" value="0" min="0">
+        </div>
+        <div class="form-group full-width" id="group-gross" style="display:none;">
+            <label>Target Gross Salary (Rs.)</label>
+            <input type="number" id="gross_salary" value="0" min="0">
+        </div>
+
+        <div class="form-group">
+            <label>Normal OT (Hours)</label>
+            <input type="number" id="normal_ot_hours" value="0" min="0">
+        </div>
+        <div class="form-group">
+            <label>Special OT (Hours)</label>
+            <input type="number" id="special_ot_hours" value="0" min="0">
+        </div>
+        <div class="form-group">
+            <label>Lieu Leaves (Days)</label>
+            <input type="number" id="lieu_leaves" value="0" min="0">
+        </div>
+        <div class="form-group">
+            <label>Fixed Allowance (Rs.)</label>
+            <input type="number" id="allowance" value="0" min="0">
         </div>
         <div class="form-group full-width">
-            <label>පෙර මූලික පඩිය (වැඩිවීම බැලීමට):</label>
-            <input type="number" id="prevBasic" placeholder="0.00">
+            <label>Other Deductions (Rs.)</label>
+            <input type="number" id="deductions" value="0" min="0">
         </div>
-        <div class="form-group"> <label>සාමාන්‍ය OT පැය:</label> <input type="number" id="ot1" value="0"> </div>
-        <div class="form-group"> <label>විශේෂ OT පැය:</label> <input type="number" id="ot2" value="0"> </div>
-        <div class="form-group"> <label>හිඟ නිවාඩු:</label> <input type="number" id="leave" value="0"> </div>
-        <div class="form-group"> <label>දීමනා:</label> <input type="number" id="allowance" value="0"> </div>
     </div>
 
-    <div class="button-group">
-        <button class="calc-total" onclick="calculate('NET')">Net Salary සොයන්න</button>
-        <button class="calc-basic" onclick="calculate('BASIC')">Basic Salary සොයන්න</button>
-    </div>
+    <button onclick="calculateSalary()">Calculate</button>
 
-    <div class="result-container" id="resultContainer">
-        <div class="result-box">
-            <span id="resTitle" style="font-size: 13px; color: #5f6368;">ප්‍රතිඵලය:</span><br>
-            <span class="result-val" id="resValue" style="font-size: 20px; font-weight: bold;">0.00</span>
+    <div class="result-box" id="result_div">
+        <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Calculation Breakdown</h3>
+        
+        <div class="result-row"><span>Basic Salary:</span> <strong id="res_basic">0.00</strong></div>
+        <div class="result-row addition"><span>+ Normal OT Amount:</span> <span id="res_normal_ot">0.00</span></div>
+        <div class="result-row addition"><span>+ Special OT Amount:</span> <span id="res_special_ot">0.00</span></div>
+        <div class="result-row addition"><span>+ Special Lieu Leaves Amount:</span> <span id="res_lieu">0.00</span></div>
+        <div class="result-row addition"><span>+ Fixed Allowance:</span> <span id="res_allowance">0.00</span></div>
+        <div class="result-row deduction"><span>- EPF Deduction (8%):</span> <span id="res_epf">0.00</span></div>
+        <div class="result-row deduction"><span>- Other Deductions:</span> <span id="res_deductions">0.00</span></div>
+        <hr>
+        <div class="result-row final-amount">
+            <span>GROSS SALARY:</span> <span id="res_gross" style="color: #007bff;">0.00</span>
         </div>
-        <button class="save-btn" onclick="saveToFile()">Calculation එක Text File එකට දාන්න</button>
     </div>
-
-    <footer>
-        © All rights reserved.<br>
-        Developed by Udan A. Jayawardene<br>
-        UDAN JAY™ DIGITAL SOLUTION
-    </footer>
 </div>
 
 <script>
-    let lastCalculation = "";
+    let currentMode = 'forward'; // 'forward' or 'backward'
 
-    function calculate(type) {
-        const val = parseFloat(document.getElementById('mainAmount').value) || 0;
-        const prev = parseFloat(document.getElementById('prevBasic').value) || 0;
-        const h1 = parseFloat(document.getElementById('ot1').value) || 0;
-        const h2 = parseFloat(document.getElementById('ot2').value) || 0;
-        const l = parseFloat(document.getElementById('leave').value) || 0;
-        const al = parseFloat(document.getElementById('allowance').value) || 0;
+    function setMode(mode) {
+        currentMode = mode;
+        
+        // Update tabs UI
+        document.getElementById('tab-forward').classList.remove('active');
+        document.getElementById('tab-backward').classList.remove('active');
+        document.getElementById('tab-' + mode).classList.add('active');
 
-        let result, basicForInc;
-        let timestamp = new Date().toLocaleString();
-
-        if (type === 'NET') {
-            let ot1Pay = (val / 240) * 1.5 * h1;
-            let ot2Pay = (val / 240) * 2 * h2;
-            let lPay = (val / 30) * l;
-            let epf = (val + ot2Pay + lPay) * 0.08;
-            result = val + ot1Pay + ot2Pay + lPay - epf + al;
-            basicForInc = val;
-            document.getElementById('resTitle').innerText = "ගණනය කළ ශුද්ධ වැටුප:";
+        // Show/Hide relevant input fields
+        if (mode === 'forward') {
+            document.getElementById('group-basic').style.display = 'flex';
+            document.getElementById('group-gross').style.display = 'none';
         } else {
-            let den = 0.92 + (0.00625 * h1) + (0.007666 * h2) + (0.030666 * l);
-            result = (val - al) / den;
-            basicForInc = result;
-            document.getElementById('resTitle').innerText = "ගණනය කළ මූලික පඩිය:";
+            document.getElementById('group-basic').style.display = 'none';
+            document.getElementById('group-gross').style.display = 'flex';
         }
-
-        let incText = (prev > 0) ? ` | වැඩිවීම: රු. ${(basicForInc - prev).toFixed(2)}` : "";
-        document.getElementById('resValue').innerText = "රු. " + result.toLocaleString(undefined, {minimumFractionDigits:2});
-        document.getElementById('resultContainer').style.display = 'block';
-
-        // Text file එකට යන string එක සකස් කිරීම
-        lastCalculation = `දිනය: ${timestamp}\nවර්ගය: ${type}\nමුදල: ${val}\nOT 1.5: ${h1}\nOT 2.0: ${h2}\nනිවාඩු: ${l}\nදීමනා: ${al}\nප්‍රතිඵලය: ${result.toFixed(2)}${incText}\n--------------------------\n`;
+        
+        // Hide result box when switching modes
+        document.getElementById('result_div').style.display = 'none';
     }
 
-    function saveToFile() {
-        if (!lastCalculation) return;
-        const blob = new Blob([lastCalculation], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'Salary_Report.txt';
-        a.click();
+    function getValue(id) {
+        let val = parseFloat(document.getElementById(id).value);
+        return isNaN(val) ? 0 : val;
+    }
+
+    function formatCurrency(amount) {
+        return "Rs. " + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calculateSalary() {
+        // Get Inputs
+        const normalOtHours = getValue('normal_ot_hours');
+        const specialOtHours = getValue('special_ot_hours');
+        const lieuLeaves = getValue('lieu_leaves');
+        const allowance = getValue('allowance');
+        const deductions = getValue('deductions');
+
+        let basicSalary = 0;
+        let grossSalary = 0;
+
+        // Formula Multipliers (Constants based on Basic Salary)
+        const k_normal_ot = (1.5 * normalOtHours) / 240;
+        const k_special_ot = (2 * specialOtHours) / 240;
+        const k_lieu = lieuLeaves / 30;
+
+        if (currentMode === 'forward') {
+            basicSalary = getValue('basic_salary');
+        } else {
+            // Backward Calculation Logic (Algebraic derivation)
+            grossSalary = getValue('gross_salary');
+            
+            // Gross = B + (B*k_normal) + (B*k_special) + (B*k_lieu) + Allowance - Deductions - EPF
+            // EPF = 0.08 * (B + B*k_special + B*k_lieu)
+            // Therefore: Gross - Allowance + Deductions = B * [1 + k_normal + k_special + k_lieu - 0.08 * (1 + k_special + k_lieu)]
+            
+            const multiplier = 1 + k_normal_ot + k_special_ot + k_lieu - 0.08 * (1 + k_special_ot + k_lieu);
+            
+            basicSalary = (grossSalary - allowance + deductions) / multiplier;
+        }
+
+        // Calculate actual amounts using Basic Salary
+        const normalOtAmount = basicSalary * k_normal_ot;
+        const specialOtAmount = basicSalary * k_special_ot;
+        const lieuAmount = basicSalary * k_lieu;
+        
+        // EPF Calculation
+        const epfBaseAmount = basicSalary + specialOtAmount + lieuAmount;
+        const epfDeduction = epfBaseAmount * 0.08;
+
+        // Calculate Gross Salary for 'forward' mode
+        if (currentMode === 'forward') {
+            grossSalary = basicSalary + normalOtAmount + specialOtAmount + lieuAmount + allowance - deductions - epfDeduction;
+        }
+
+        // Update DOM Elements
+        document.getElementById('res_basic').innerText = formatCurrency(basicSalary);
+        document.getElementById('res_normal_ot').innerText = formatCurrency(normalOtAmount);
+        document.getElementById('res_special_ot').innerText = formatCurrency(specialOtAmount);
+        document.getElementById('res_lieu').innerText = formatCurrency(lieuAmount);
+        document.getElementById('res_allowance').innerText = formatCurrency(allowance);
+        document.getElementById('res_deductions').innerText = formatCurrency(deductions);
+        document.getElementById('res_epf').innerText = formatCurrency(epfDeduction);
+        document.getElementById('res_gross').innerText = formatCurrency(grossSalary);
+
+        // Show Results
+        document.getElementById('result_div').style.display = 'block';
     }
 </script>
 
