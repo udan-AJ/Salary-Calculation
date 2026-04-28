@@ -301,9 +301,9 @@
         }
 
         const incrementAmount = basicSalary - prevBasicSalary;
-        const normalOtAmount = basicSalary * k_normal_ot;
-        const specialOtAmount = basicSalary * k_special_ot;
-        const lieuAmount = basicSalary * k_lieu;
+        const normalOtAmount = prevBasicSalary * k_normal_ot;
+        const specialOtAmount = prevBasicSalary * k_special_ot;
+        const lieuAmount = prevBasicSalary * k_lieu;
         const epfBaseAmount = basicSalary + specialOtAmount + lieuAmount;
         const epfDeduction = epfBaseAmount * 0.08;
 
