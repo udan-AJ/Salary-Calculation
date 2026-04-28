@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salary Calculator</title>
+    <title>Salary Calculator - UDAN JAY™</title>
     <style>
-        /* CSS Fix for Mobile Overflow */
         * {
             box-sizing: border-box;
         }
@@ -28,7 +27,7 @@
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            flex-grow: 1; /* Pushes footer to bottom */
+            flex-grow: 1;
         }
         h2 {
             text-align: center;
@@ -136,8 +135,6 @@
             font-weight: bold;
             color: #000;
         }
-
-        /* Footer Styles */
         .footer {
             text-align: center;
             margin-top: 30px;
@@ -145,9 +142,7 @@
             color: #6c757d;
             font-size: 13px;
         }
-        .footer p {
-            margin: 4px 0;
-        }
+        .footer p { margin: 4px 0; }
         .footer .brand {
             font-weight: bold;
             color: #007bff;
@@ -156,17 +151,9 @@
             margin-top: 8px;
         }
 
-        /* Mobile Responsive adjustments */
         @media (max-width: 600px) {
-            .input-grid {
-                grid-template-columns: 1fr;
-            }
-            .form-group.full-width {
-                grid-column: span 1;
-            }
-            .container {
-                padding: 15px;
-            }
+            .input-grid { grid-template-columns: 1fr; }
+            .form-group.full-width { grid-column: span 1; }
         }
     </style>
 </head>
@@ -181,18 +168,19 @@
     </div>
 
     <div class="input-grid">
+        <div class="form-group full-width">
+            <label>Previous Basic Salary (For OT/Lieu Calculation)</label>
+            <input type="number" id="prev_basic_salary" value="0" min="0">
+        </div>
+
         <div class="form-group full-width" id="group-basic">
             <label>New Basic Salary (Rs.)</label>
             <input type="number" id="basic_salary" value="0" min="0">
         </div>
+
         <div class="form-group full-width" id="group-gross" style="display:none;">
             <label>Target Gross Salary (Rs.)</label>
             <input type="number" id="gross_salary" value="0" min="0">
-        </div>
-        
-        <div class="form-group full-width">
-            <label>Previous Basic Salary (Rs.)</label>
-            <input type="number" id="prev_basic_salary" value="0" min="0">
         </div>
 
         <div class="form-group">
@@ -228,9 +216,9 @@
         
         <hr style="margin-top: 5px;">
 
-        <div class="result-row addition"><span>+ Normal OT Amount:</span> <span id="res_normal_ot">0.00</span></div>
-        <div class="result-row addition"><span>+ Special OT Amount:</span> <span id="res_special_ot">0.00</span></div>
-        <div class="result-row addition"><span>+ Special Lieu Leaves Amount:</span> <span id="res_lieu">0.00</span></div>
+        <div class="result-row addition"><span>+ Normal OT (on Prev. Basic):</span> <span id="res_normal_ot">0.00</span></div>
+        <div class="result-row addition"><span>+ Special OT (on Prev. Basic):</span> <span id="res_special_ot">0.00</span></div>
+        <div class="result-row addition"><span>+ Special Lieu Amount (on Prev. Basic):</span> <span id="res_lieu">0.00</span></div>
         <div class="result-row addition"><span>+ Fixed Allowance:</span> <span id="res_allowance">0.00</span></div>
         <div class="result-row deduction"><span>- EPF Deduction (8%):</span> <span id="res_epf">0.00</span></div>
         <div class="result-row deduction"><span>- Other Deductions:</span> <span id="res_deductions">0.00</span></div>
@@ -252,19 +240,12 @@
 
     function setMode(mode) {
         currentMode = mode;
-        
         document.getElementById('tab-forward').classList.remove('active');
         document.getElementById('tab-backward').classList.remove('active');
         document.getElementById('tab-' + mode).classList.add('active');
 
-        if (mode === 'forward') {
-            document.getElementById('group-basic').style.display = 'flex';
-            document.getElementById('group-gross').style.display = 'none';
-        } else {
-            document.getElementById('group-basic').style.display = 'none';
-            document.getElementById('group-gross').style.display = 'flex';
-        }
-        
+        document.getElementById('group-basic').style.display = (mode === 'forward') ? 'flex' : 'none';
+        document.getElementById('group-gross').style.display = (mode === 'backward') ? 'flex' : 'none';
         document.getElementById('result_div').style.display = 'none';
     }
 
@@ -278,43 +259,46 @@
     }
 
     function calculateSalary() {
+        const prevBasic = getValue('prev_basic_salary');
         const normalOtHours = getValue('normal_ot_hours');
         const specialOtHours = getValue('special_ot_hours');
         const lieuLeaves = getValue('lieu_leaves');
         const allowance = getValue('allowance');
         const deductions = getValue('deductions');
-        const prevBasicSalary = getValue('prev_basic_salary');
+
+        // OT and Lieu calculation using PREVIOUS Basic Salary
+        const normalOtAmount = (prevBasic / 240) * 1.5 * normalOtHours;
+        const specialOtAmount = (prevBasic / 240) * 2 * specialOtHours;
+        const lieuAmount = (prevBasic / 30) * lieuLeaves;
 
         let basicSalary = 0;
         let grossSalary = 0;
 
-        const k_normal_ot = (1.5 * normalOtHours) / 240;
-        const k_special_ot = (2 * specialOtHours) / 240;
-        const k_lieu = lieuLeaves / 30;
-
         if (currentMode === 'forward') {
             basicSalary = getValue('basic_salary');
         } else {
-            grossSalary = getValue('gross_salary');
-            const multiplier = 1 + k_normal_ot + k_special_ot + k_lieu - 0.08 * (1 + k_special_ot + k_lieu);
-            basicSalary = (grossSalary - allowance + deductions) / multiplier;
+            // Backward Logic:
+            // Gross = B_new + OT_norm + OT_spec + Lieu + Allow - Ded - 0.08(B_new + OT_spec + Lieu)
+            // Gross = 0.92*B_new + OT_norm + 0.92*OT_spec + 0.92*Lieu + Allow - Ded
+            const targetGross = getValue('gross_salary');
+            basicSalary = (targetGross - normalOtAmount - (0.92 * specialOtAmount) - (0.92 * lieuAmount) - allowance + deductions) / 0.92;
         }
 
-        const incrementAmount = basicSalary - prevBasicSalary;
-        const normalOtAmount = prevBasicSalary * k_normal_ot;
-        const specialOtAmount = prevBasicSalary * k_special_ot;
-        const lieuAmount = prevBasicSalary * k_lieu;
-        const epfBaseAmount = basicSalary + specialOtAmount + lieuAmount;
-        const epfDeduction = epfBaseAmount * 0.08;
+        const incrementAmount = basicSalary - prevBasic;
+        
+        // EPF is 8% of (New Basic + Special OT + Lieu Amount)
+        const epfBase = basicSalary + specialOtAmount + lieuAmount;
+        const epfDeduction = epfBase * 0.08;
 
         if (currentMode === 'forward') {
             grossSalary = basicSalary + normalOtAmount + specialOtAmount + lieuAmount + allowance - deductions - epfDeduction;
+        } else {
+            grossSalary = getValue('gross_salary');
         }
 
         document.getElementById('res_basic').innerText = formatCurrency(basicSalary);
-        document.getElementById('res_prev_basic').innerText = formatCurrency(prevBasicSalary);
+        document.getElementById('res_prev_basic').innerText = formatCurrency(prevBasic);
         document.getElementById('res_increment').innerText = formatCurrency(incrementAmount);
-        
         document.getElementById('res_normal_ot').innerText = formatCurrency(normalOtAmount);
         document.getElementById('res_special_ot').innerText = formatCurrency(specialOtAmount);
         document.getElementById('res_lieu').innerText = formatCurrency(lieuAmount);
